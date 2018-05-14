@@ -31,10 +31,16 @@ int main() {
     //struct sockaddr* serverAddr;
     //socklen_t serverAddrLen=sizeof(*serverAddr);
     message msg={"gotcha"};
+    printf("send\n");
+
     sendto(udpFd, &msg, sizeof(msg), 0, (struct sockaddr*) &udpAddr, sizeof(udpAddr));
     struct sockaddr_in recvAddr;
     unsigned int recvAddrLen=sizeof(recvAddr);
-    recvfrom(udpFd, &buf, 0, sizeof(buf), &recvAddr, &recvAddrLen);
-    printf("send-rcv handshake");
+    printf("rcv\n");
+
+    recvfrom(udpFd, &buf, MSG_WAITALL, sizeof(buf), &recvAddr, &recvAddrLen);
+    printf("send-rcv handshake\n");
+
+
     return 0;
 }

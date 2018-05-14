@@ -25,7 +25,8 @@ int main() {
     char buf = 0;
     struct sockaddr serverAddr={};
     socklen_t serverAddrLen=sizeof(serverAddr);
+    printf("rcv\n");
     recvfrom(udpFd, &buf, sizeof(buf),0, &serverAddr, &serverAddrLen);
-    printf("send-rcv handshake");
+    printf("send-rcv handshake\n");
     return 0;
 }
