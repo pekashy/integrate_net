@@ -13,17 +13,21 @@
 #include <signal.h>
 
 typedef struct message{
-    char msg[8];
+    struct sockaddr_in addr;
 } message;
 
 int main() {
     printf("Hello, World!\n");
     int udpFd = socket(PF_INET, SOCK_DGRAM, 0);
+    int tcpFd= socket(PF_INET, SOCK_STREAM, 0);
+    message msg;
     struct sockaddr_in udpAddr = {
             .sin_family=AF_INET,
             .sin_port=htons(4000),
             .sin_addr.s_addr=htonl(INADDR_BROADCAST)
     };
+    struct sockaddr_in tcpAddr;
+
     int ovl = -1;
     setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
     int rbuf = getpid();
@@ -39,15 +43,19 @@ int main() {
     struct sockaddr_in recvAddr;//сюда пишем адрес
     unsigned int recvAddrLen = sizeof(recvAddr);
 
-    struct sockaddr_in ownAddr;
-    unsigned int ownAddrLen = sizeof(recvAddr);
-
-    recvfrom(udpFd, &buf, sizeof(buf), MSG_DONTWAIT, &recvAddr,
-                      &recvAddrLen);
-    if(buf!=8){
+    if(recvfrom(udpFd, &msg, sizeof(msg), MSG_DONTWAIT, &recvAddr,
+                &recvAddrLen)<0){
         printf("error connecting to client\n");
         return 0;
     }
     printf("send-rcv handshake\n");
+    tcpAddr=msg.addr;
+    bind(tcpFd, (struct sockaddr*) &tcpAddr, sizeof(tcpAddr));
+    listen(tcpFd, 256);
+
+    int sk=accept(tcpFd,(struct sockaddr*) &tcpAddr, sizeof(tcpAddr));
+
+    printf("tcp handshake %d\n", sk);
+
     return 0;
 }

@@ -13,44 +13,64 @@
 #include <signal.h>
 
 
+typedef struct slaveServers
+{
+    struct sockaddr_in udpAddr;
+    struct sockaddr_in tcpAddr;
+    int thrNum;
+    socklen_t addrLen;
+    int sk;
+    int tcpFd;
+    int udpFd;
+} slaveServers;
+
+typedef struct message{
+    struct sockaddr_in addr;
+} message;
+
 int main() {
-    int n=1;
+    int n=2;
+    slaveServers sl[n];
+    message msg[n];
+
     printf("Hello, World!\n");
-    int udpFd=socket(PF_INET, SOCK_DGRAM, 0);
-    struct sockaddr_in udpAddr={
-            .sin_family=AF_INET,
-            .sin_port=htons(4000),
-            .sin_addr.s_addr= htonl(INADDR_ANY)
-    };
-    if(bind(udpFd, &udpAddr, sizeof(udpAddr))<0){
-        printf("bind error");
-        return 0;
+
+    for(int a=0; a<n; a++) {
+        sl[a].udpFd=socket(PF_INET, SOCK_DGRAM, 0);
+        sl[a].tcpFd= socket(PF_INET, SOCK_STREAM, 0);
+        if(bind(sl[a].udpFd, &sl[a].udpAddr, sizeof(sl[a].udpAddr))<0){
+            printf("bind error");
+            return 0;
+        }
+        if(bind(sl[a].tcpFd, &sl[a].tcpAddr, sizeof(sl[a].tcpAddr))<0){
+            printf("bind error");
+            return 0;
+        }
+        sl[a].udpAddr = {
+                .sin_family=AF_INET,
+                .sin_port=htons(4000),
+                .sin_addr.s_addr= htonl(INADDR_ANY)
+        };
+        sl[a].tcpAddr = {
+                .sin_family = AF_INET,
+                .sin_port = 0,
+                .sin_addr.s_addr = htonl(INADDR_ANY)
+        };
     }
-    struct sockaddr_in serverAddr={
-            .sin_family=AF_INET,
-            .sin_port=htons(4000),
-            .sin_addr.s_addr= htonl(INADDR_ANY)
-    };
-    socklen_t serverAddrLen=sizeof(serverAddr);
 
-    int buf = 8;
     int rbuf = 0;
-
-    int status =-1;
-
-   /* recvfrom(udpFd, &buf, sizeof(buf),MSG_WAITALL, serverAddr, &serverAddrLen); //ждем любого сообщения
-    printf("rcv\n");
-    if(sendto(udpFd, &buf, sizeof(buf), 0, (struct sockaddr*) serverAddr, sizeof(*serverAddr))<0){
-        printf("msgsnd error, possibly sigpipe\n");
-        return 0;
-    } //*/
-    for (int i=n; i > 0; ) {
-        if(recvfrom(udpFd, &rbuf, sizeof(rbuf),MSG_WAITALL, (struct sockaddr*) &serverAddr, &serverAddrLen)<0) return -2; //ждем любого сообщения
+    for (int i=0; i < n; i++) {
+        sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
+        if(recvfrom(sl[i].udpFd, &rbuf, sizeof(rbuf),MSG_WAITALL, (struct sockaddr*) &sl[i].udpAddr, &sl[i].addrLen)<0) return -2; //ждем любого сообщения
         printf("rcv\n");
-        if(sendto(udpFd, &buf, sizeof(buf), 0, (struct sockaddr*) &serverAddr, sizeof(serverAddr))<0){
+        bind(sl[i].tcpFd, (struct sockaddr*)&sl[i].tcpAddr, sizeof(sl[i].tcpAddr));
+        msg[i].addr=sl[i].tcpAddr;
+        if(sendto(sl[i].udpFd, &msg, sizeof(msg), MSG_WAITALL, (struct sockaddr*) &sl[i].udpAddr, sizeof(sl[i].addrLen))<0){
             printf("msgsnd error\n");
             return -3;
-        } //
+        }
+
+        //
 
         //(sendto(fdUdp, &msgC, sizeof(msgC), 0, (struct sockaddr*)&addr, sizeof(addr)));
 
@@ -70,6 +90,8 @@ int main() {
             nClients++;
         }*/
         i--;
+        printf("rcv-snd handshake\n");
+
     }
 
     printf("rcv-snd handshake\n");
