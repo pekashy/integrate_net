@@ -18,29 +18,36 @@ typedef struct message{
 
 int main() {
     printf("Hello, World!\n");
-    int udpFd=socket(PF_INET, SOCK_DGRAM, 0);
-    struct sockaddr_in udpAddr={
+    int udpFd = socket(PF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in udpAddr = {
             .sin_family=AF_INET,
             .sin_port=htons(4000),
             .sin_addr.s_addr=htonl(INADDR_BROADCAST)
     };
-    int ovl=-1;
+    int ovl = -1;
     setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
-    bind(udpFd, &udpAddr, sizeof(udpAddr));
-    char buf = 0;
-    //struct sockaddr* serverAddr;
-    //socklen_t serverAddrLen=sizeof(*serverAddr);
-    message msg={"gotcha"};
+    int rbuf = getpid();
+    printf("pid %d", rbuf);
+    int buf = 0;
+
+    int status = -1;
+
+    sendto(udpFd, &rbuf, sizeof(rbuf), 0, (struct sockaddr *) &udpAddr,
+           sizeof(udpAddr)); //заявляем о себе в бродкаст
     printf("send\n");
 
-    sendto(udpFd, &msg, sizeof(msg), 0, (struct sockaddr*) &udpAddr, sizeof(udpAddr));
-    struct sockaddr_in recvAddr;
-    unsigned int recvAddrLen=sizeof(recvAddr);
-    printf("rcv\n");
+    struct sockaddr_in recvAddr;//сюда пишем адрес
+    unsigned int recvAddrLen = sizeof(recvAddr);
 
-    recvfrom(udpFd, &buf, MSG_WAITALL, sizeof(buf), &recvAddr, &recvAddrLen);
+    struct sockaddr_in ownAddr;
+    unsigned int ownAddrLen = sizeof(recvAddr);
+
+    recvfrom(udpFd, &buf, sizeof(buf), MSG_DONTWAIT, &recvAddr,
+                      &recvAddrLen);
+    if(buf!=8){
+        printf("error connecting to client\n");
+        return 0;
+    }
     printf("send-rcv handshake\n");
-
-
     return 0;
 }
