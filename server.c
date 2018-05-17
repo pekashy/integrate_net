@@ -65,6 +65,8 @@ typedef struct message{
 int main() {
     printf("Hello, World!\n");
     int udpFd = socket(PF_INET, SOCK_DGRAM, 0);
+    int tcpFd= socket(PF_INET, SOCK_STREAM, 0);
+
     struct sockaddr_in udpAddr = {
             .sin_family=AF_INET,
             .sin_port=htons(4000),
@@ -91,22 +93,24 @@ int main() {
         if ((status=recvfrom(udpFd, &buf, sizeof(buf), MSG_DONTWAIT, &recvAddr, &recvAddrLen))>=0){
             break;
         }
-        if(errno==EAGAIN) i--;
         sleep(1);
     }
     if(status<0){
         printf("error connecting to client\n");
         return 0;
     }
-
-    /*while(buf!=8){ //got our own
-        sendto(udpFd, &rbuf, sizeof(rbuf), 0, (struct sockaddr *) &udpAddr, sizeof(udpAddr)); //заявляем о себе в бродкаст
-        usleep(100);
-        if (recvfrom(udpFd, &buf, sizeof(buf), MSG_DONTWAIT, &recvAddr, &recvAddrLen)<0){
-            printf("error connecting to client\n");
-            return 0;
-        }
-    }*/
     printf("send-rcv handshake\n");
+
+    bind(tcpFd, (struct sockaddr*) &recvAddr, sizeof(recvAddr));
+    listen(tcpFd, 256);
+
+
+    printf("waiting for accept \n");
+
+    int sk=accept(tcpFd,(struct sockaddr*) &recvAddr, sizeof(recvAddr)); //waiting for accept
+
+    printf("tcp handshake %d\n", sk);
+
+
     return 0;
 }
