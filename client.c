@@ -1,22 +1,4 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-//#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
-#include <signal.h>
-
-typedef struct slaveServers
-{
-    struct sockaddr_in addr;
-    //struct socklen_t a;
-} slaveServers;
+#include "headers.h"
 
 int getClientsAddr(slaveServers* sl, int n){
     int udpFd=socket(PF_INET, SOCK_DGRAM, 0);
@@ -43,16 +25,43 @@ int getClientsAddr(slaveServers* sl, int n){
             printf("msgsnd error\n");
             return -3;
         }
+        sl[i].fd=socket(PF_INET, SOCK_STREAM, 0);
     }
-
     printf("rcv-snd handshake\n");
-    return 0;
+    return 1;
 }
 
 int main() {
+    int a=0;
+    int b=500;
     int n=2;
+    borders bo[n];
     printf("Hello, World!\n");
-    slaveServers* sl=malloc(n*sizeof(slaveServers));
-    getClientsAddr(sl, n);
+    slaveServers* sl=calloc(n, sizeof(slaveServers));
+    if(getClientsAddr(sl, n)!=1) return -1;
+    int o;
+    int status=-1;
+    double result=0, back;
+    struct timeval tv;
+    for(int i=0; i<n; i++){
+        bo[i].a = a + (b - a) / n * i;
+        bo[i].b = a + (b - a) / n * (i + 1);
+        setsockopt(sl[i].fd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        setsockopt(sl[i].fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+        connect(sl[i].fd, (struct sockaddr*) &sl[i].addr, sizeof(sl[i].addr));
+        write(sl[i].fd, &bo[i], sizeof(bo[i]));
+    }
+    for(int i=0; i<n; i++) {
+        status = read(sl[i].fd, &back, sizeof(back));
+        if (status<0) {
+            printf ("error: client not found\n");
+            return -1;
+        }
+        result+=back;
+        close(sl[i].fd);
+    }
+    printf("%e\n", result);
     return 0;
 }
