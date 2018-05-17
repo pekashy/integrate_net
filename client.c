@@ -28,11 +28,6 @@ int getClientsAddr(slaveServers* sl, int n){
         sl[i].tcpAddr.sin_family=AF_INET;
         sl[i].tcpAddr.sin_port=0;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
-
-        /*msg.tcpAddr.sin_family=AF_INET,
-        msg.tcpAddr.sin_port=htons(4500),
-        msg.tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);*/
-
         serverAddrLen=sizeof(sl[i].addr);
         if(recvfrom(udpFd, &rbuf, sizeof(rbuf), MSG_WAITALL, (struct sockaddr*) &sl[i].addr, &serverAddrLen)<0) return -2; //ждем любого сообщения
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr.s_addr);
@@ -55,7 +50,7 @@ int getClientsAddr(slaveServers* sl, int n){
 int main() {
     double a=0;
     double b=500;
-    int n=1;
+    int n=2;
     borders bo[n];
     printf("Hello, World!\n");
     slaveServers* sl=calloc(n, sizeof(slaveServers));
@@ -65,8 +60,6 @@ int main() {
     double result=0, back;
     struct timeval tv;
     for(int i=0; i<n; i++){
-        //sl[i].fd=socket(PF_INET, SOCK_STREAM, 0);
-        //bind(sl[i].fd, (struct sockaddr*) &sl[i].addr, sizeof(sl[i].addr));
         bo[i].a = a + (b - a) / n * i;
         bo[i].b = a + (b - a) / n * (i + 1);
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
@@ -75,13 +68,12 @@ int main() {
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
         //write(sl[i].fd, &bo[i], sizeof(bo[i]));
         sl[i].sk=-1;
-        if((sl[i].sk=accept(sl[i].tcpFd, NULL, NULL))<0) return 0;
-
-        o=write(sl[i].sk, &bo[i], sizeof(bo[i]));
-        printf("%f %f %d\n", bo[i].a, bo[i].b, o);
 
     }
     for(int i=0; i<n; i++) {
+        if((sl[i].sk=accept(sl[i].tcpFd, NULL, NULL))<0) return 0;
+        o=write(sl[i].sk, &bo[i], sizeof(bo[i]));
+        printf("%f %f %d\n", bo[i].a, bo[i].b, o);
         status = read(sl[i].sk, &back, sizeof(back));
         if (status<0) {
             printf ("error: client not found\n");

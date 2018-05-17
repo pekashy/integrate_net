@@ -35,7 +35,6 @@ typedef struct slaveServers {
     int fd;
     int tcpFd;
     int sk;
-    //struct socklen_t a;
 } slaveServers;
 
 typedef struct msg{

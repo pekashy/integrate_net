@@ -8,8 +8,6 @@ void* threadFunc(void* b){
     double ftrp=0;
     summ= malloc((sizeof(double)));
     double a= bord->a;
-    //printf("proc %lu; proc %d; a %f\n", pthread_self(), sched_getcpu(), a);
-
     long long n=(long long) ((bord->b-a)/EPS);
     long long count=0;
     for(double x=a+EPS; count<n; count=count+1){
@@ -164,8 +162,6 @@ int main() {
     }
     printf("send-rcv handshake\n");
     int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-
-    //ecvAddr.sin_port=htons(4500);
     printf("waiting for accept \n");
     int sk=-1;
     int o=1;
@@ -173,7 +169,7 @@ int main() {
     struct timeval tv;
     tv.tv_sec = 2;
     tv.tv_usec = 0;
-    setsockopt(tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*) &tv, sizeof(tv));
+    setsockopt(tcpFd, SOL_SOCKET, 0, (const char*) &tv, sizeof(tv));
     for (int k=0; (o=connect(tcpFd, (struct sockaddr*) &a.tcpAddr, sizeof(a.tcpAddr))==-1 && k<1000); k++){
         tv.tv_sec = 1;
         tv.tv_usec = 0;
