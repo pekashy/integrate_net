@@ -3,4 +3,4 @@ project(integrate_net C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(integrate_net main.c client.c server.c)
+add_executable(integrate_net client.c server.c)

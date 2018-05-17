@@ -1,48 +1,5 @@
 #include "headers.h"
 
-/*int main() {
-    printf("Hello, World!\n");
-    int udpFd = socket(PF_INET, SOCK_DGRAM, 0);
-    int tcpFd= socket(PF_INET, SOCK_STREAM, 0);
-    message msg;
-    struct sockaddr_in udpAddr = {
-            .sin_family=AF_INET,
-            .sin_port=htons(4000),
-            .sin_addr.s_addr=htonl(INADDR_BROADCAST)
-    };
-    struct sockaddr_in tcpAddr;
-
-    int ovl = -1;
-    setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
-    int rbuf = getpid();
-    printf("pid %d", rbuf);
-    int buf = 0;
-
-    int status = -1;
-
-    sendto(udpFd, &rbuf, sizeof(rbuf), 0, (struct sockaddr *) &udpAddr,
-           sizeof(udpAddr)); //заявляем о себе в бродкаст
-    printf("send\n");
-
-    struct sockaddr_in recvAddr;//сюда пишем адрес
-    unsigned int recvAddrLen = sizeof(recvAddr);
-
-    if(recvfrom(udpFd, &msg, sizeof(msg), MSG_DONTWAIT, &recvAddr,
-                &recvAddrLen)<0){
-        printf("error connecting to client\n");
-        return 0;
-    }
-    printf("send-rcv handshake\n");
-    tcpAddr=msg.addr;
-    bind(tcpFd, (struct sockaddr*) &tcpAddr, sizeof(tcpAddr));
-    listen(tcpFd, 256);
-
-    int sk=accept(tcpFd,(struct sockaddr*) &tcpAddr, sizeof(tcpAddr));
-
-    printf("tcp handshake %d\n", sk);
-
-    return 0;
-}*/
 
 void* threadFunc(void* b){
 
@@ -67,7 +24,6 @@ void* threadFunc(void* b){
 double integrate(borders boo) {
     cpu_set_t mask;
     int mCpu, mCore;
-
     int procNum = get_nprocs();
 
     int coreIdMax = -1;
@@ -145,7 +101,7 @@ double integrate(borders boo) {
             }
             printf("starting %dth process #%lu on core %d| current load %d loadCore %d\n",
                    i, threads[i], w, cpu[w].load, loadCore);
-
+            cpu[w].load++;
             i++;
         }
     }
@@ -167,18 +123,16 @@ double integrate(borders boo) {
 int main() {
     printf("Hello, World!\n");
     int udpFd = socket(PF_INET, SOCK_DGRAM, 0);
-    int tcpFd= socket(PF_INET, SOCK_STREAM, 0);
 
     struct sockaddr_in udpAddr = {
             .sin_family=AF_INET,
             .sin_port=htons(4000),
             .sin_addr.s_addr=htonl(INADDR_BROADCAST)
     };
-
     struct sockaddr_in tcpAddr = {
-            .sin_family = AF_INET,
-            .sin_port = 0,
-            .sin_addr.s_addr = htonl(INADDR_ANY)
+            .sin_family=AF_INET,
+            .sin_port=0,
+            .sin_addr.s_addr=htonl(INADDR_ANY)
     };
 
     int ovl = -1;
@@ -186,7 +140,7 @@ int main() {
     int rbuf = getpid();
     printf("pid %d", rbuf);
     double buf = 0;
-
+    msg a; //recieving adress
     int status = -1;
     printf("send %lu\n", htonl(udpAddr.sin_addr.s_addr));
 
@@ -195,11 +149,11 @@ int main() {
 
     struct sockaddr_in recvAddr;//сюда пишем адрес
     unsigned int recvAddrLen = sizeof(recvAddr);
+    unsigned int tcpAddrLen = sizeof(tcpAddr);
 
-    struct sockaddr_in ownAddr;
-    unsigned int ownAddrLen = sizeof(recvAddr);
+
     for(int i=0; i<5; i++){
-        if ((status=recvfrom(udpFd, &buf, sizeof(buf), MSG_DONTWAIT, &recvAddr, &recvAddrLen))>=0){
+        if ((status=recvfrom(udpFd, &a, sizeof(msg), MSG_DONTWAIT, &recvAddr, &recvAddrLen))==sizeof(msg)){
             break;
         }
         sleep(1);
@@ -209,25 +163,30 @@ int main() {
         return 0;
     }
     printf("send-rcv handshake\n");
-    tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-    bind(tcpFd, (struct sockaddr*) &recvAddr, sizeof(recvAddr));
-    listen(tcpFd, 256);
+    int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
+
+    //ecvAddr.sin_port=htons(4500);
     printf("waiting for accept \n");
     int sk=-1;
     int o=1;
-    setsockopt(sk, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
+    setsockopt(tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
     struct timeval tv;
-    tv.tv_sec = 0;
+    tv.tv_sec = 2;
     tv.tv_usec = 0;
-    setsockopt(sk, SOL_SOCKET, SO_RCVTIMEO, (const char*) &tv, sizeof(tv));
-    sk=accept(sk, NULL, NULL);
-    printf("tcp handshake %d\n", sk);
+    setsockopt(tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*) &tv, sizeof(tv));
+    for (int k=0; (o=connect(tcpFd, (struct sockaddr*) &a.tcpAddr, sizeof(a.tcpAddr))==-1 && k<1000); k++){
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+    }
+    //if((sk=accept(tcpFd, &a.tcpAddr, NULL))<0) return 0;
+    printf("%d\n", tcpFd);
+    printf("tcp handshake %d\n", tcpFd);
     borders bo;
-    read(sk, &bo, sizeof(bo));
+    read(tcpFd, &bo, sizeof(bo));
+    printf("%f %f\n", bo.a, bo.b);
     double res=integrate(bo);
-    write(sk, &res, sizeof(res));
+    write(tcpFd, &res, sizeof(res));
     close(tcpFd);
-    close(sk);
     return 0;
 }
 
