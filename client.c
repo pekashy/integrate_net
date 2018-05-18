@@ -32,6 +32,7 @@ int getClientsAddr(slaveServers* sl, int n){
         if(recvfrom(udpFd, &rbuf, sizeof(rbuf), MSG_WAITALL, (struct sockaddr*) &sl[i].addr, &serverAddrLen)<0) return -2; //ждем любого сообщения
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr.s_addr);
         sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
+        sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
         bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr));
         tcpAddrLen=sizeof(sl[i].tcpAddr);
         getsockname(sl[i].tcpFd, &sl[i].tcpAddr, &tcpAddrLen);
@@ -50,7 +51,7 @@ int getClientsAddr(slaveServers* sl, int n){
 int main() {
     double a=0;
     double b=500;
-    int n=2;
+    int n=1;
     borders bo[n];
     printf("Hello, World!\n");
     slaveServers* sl=calloc(n, sizeof(slaveServers));
@@ -73,10 +74,14 @@ int main() {
     for(int i=0; i<n; i++) {
         if((sl[i].sk=accept(sl[i].tcpFd, NULL, NULL))<0) return 0;
         o=write(sl[i].sk, &bo[i], sizeof(bo[i]));
+        if (o<0) {
+            printf ("error: server is dead\n");
+            return -1;
+        }
         printf("%f %f %d\n", bo[i].a, bo[i].b, o);
         status = read(sl[i].sk, &back, sizeof(back));
-        if (status<0) {
-            printf ("error: client not found\n");
+        if (status<=0) {
+            printf ("result read error\n");
             return -1;
         }
         result+=back;
