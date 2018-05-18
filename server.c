@@ -132,16 +132,19 @@ int main() {
             .sin_port=0,
             .sin_addr.s_addr=htonl(INADDR_ANY)
     };
+    int rbuf = getpid();
 
     int ovl = -1;
     setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
-    int rbuf = getpid();
+    int sndbf=sizeof(rbuf);
+    int ssndbf=sizeof(sndbf);
+    setsockopt(udpFd, SOL_SOCKET, SO_SNDBUF, &sndbf, &ssndbf);
     printf("pid %d", rbuf);
     double buf = 0;
     msg a; //recieving adress
     int status = -1;
     printf("send %lu\n", htonl(udpAddr.sin_addr.s_addr));
-
+    
     sendto(udpFd, &rbuf, sizeof(rbuf), 0, (struct sockaddr *) &udpAddr, sizeof(udpAddr)); //заявляем о себе в бродкаст
     printf("send %lu\n", htonl(udpAddr.sin_addr.s_addr));
 
