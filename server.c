@@ -169,12 +169,12 @@ int main() {
     struct timeval tv;
     tv.tv_sec = 2;
     tv.tv_usec = 0;
-    setsockopt(tcpFd, SOL_SOCKET, 0, (const char*) &tv, sizeof(tv));
+    //setsockopt(tcpFd, SOL_SOCKET, 0, (const char*) &tv, sizeof(tv));
+    a.tcpAddr.sin_addr=recvAddr.sin_addr;
     for (int k=0; (o=connect(tcpFd, (struct sockaddr*) &a.tcpAddr, sizeof(a.tcpAddr))==-1 && k<1000); k++){
         tv.tv_sec = 1;
         tv.tv_usec = 0;
     }
-    //if((sk=accept(tcpFd, &a.tcpAddr, NULL))<0) return 0;
     printf("%d\n", tcpFd);
     printf("tcp handshake %d\n", tcpFd);
     borders bo;

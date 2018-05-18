@@ -32,7 +32,7 @@ int getClientsAddr(slaveServers* sl, int n){
         if(recvfrom(udpFd, &rbuf, sizeof(rbuf), MSG_WAITALL, (struct sockaddr*) &sl[i].addr, &serverAddrLen)<0) return -2; //ждем любого сообщения
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr.s_addr);
         sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-        sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
+        //sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
         bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr));
         tcpAddrLen=sizeof(sl[i].tcpAddr);
         getsockname(sl[i].tcpFd, &sl[i].tcpAddr, &tcpAddrLen);
