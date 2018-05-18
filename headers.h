@@ -13,6 +13,7 @@
 #include <math.h>
 #include <sys/sysinfo.h>
 #include <errno.h>
+#include <limits.h>
 
 #define EPS 1.e-5
 #define FUNC 1/(sin(x*x)+2)

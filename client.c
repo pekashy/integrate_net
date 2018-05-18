@@ -48,10 +48,35 @@ int getClientsAddr(slaveServers* sl, int n){
     return 1;
 }
 
-int main() {
+int input(int argc, char** argv){
+    char *endptr, *str;
+    long val;
+    if (argc < 2) {
+        fprintf(stderr, "Slave not stated, interpreting as 1 \n");
+        return 1;
+    }
+    str = argv[1];
+    errno = 0;    /* To distinguish success/failure after call */
+    val = strtol(str, &endptr, 10);
+    /* Check for various possible errors */
+    if ((errno == ERANGE && (val == INT_MAX || val == INT_MIN))
+        || (errno != 0 && val == 0)) {
+        perror("range");
+        return 0;
+    }
+    if (endptr == str) {
+        fprintf(stderr, "Slave num not stated, interpreting as 1 \n");
+        return 1;
+    }
+    /* If we got here, strtol() successfully parsed a number */
+    return (int) val;
+}
+
+
+int main(int argc, char* argv) {
     double a=0;
     double b=500;
-    int n=1;
+    int n=input(argc, argv);
     borders bo[n];
     printf("Hello, World!\n");
     slaveServers* sl=calloc(n, sizeof(slaveServers));
@@ -64,7 +89,7 @@ int main() {
         bo[i].a = a + (b - a) / n * i;
         bo[i].b = a + (b - a) / n * (i + 1);
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
-        tv.tv_sec = 2;
+        tv.tv_sec = 120;
         tv.tv_usec = 0;
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
         //write(sl[i].fd, &bo[i], sizeof(bo[i]));
