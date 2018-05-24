@@ -187,8 +187,8 @@ int main(int argc, char** argv) {
     tcpAddr.sin_addr=recvAddr.sin_addr;
     //tcpAddr.sin_port=recvAddr.sin_port;
     if(bind(tcpFd, &tcpAddr, sizeof(tcpAddr))){
-        printf("bind error try another port");
-        return -3;
+        printf("bind error %d", errno);
+        //return -3;
     }
     unsigned int tcpAddrLen = sizeof(tcpAddr);
     getsockname(tcpFd, &tcpAddr, &tcpAddrLen);
