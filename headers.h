@@ -17,6 +17,7 @@
 
 #define EPS 1.e-5
 #define FUNC 1/(sin(x*x)+2)
+#define UDPPORT 11377
 
 typedef struct borders{
     double a;

@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
     int n=input(argc, argv);
     struct sockaddr_in recvAddr = {
             .sin_family=AF_INET,
-            .sin_port=htons(40110),
+            .sin_port=htons(UDPPORT),
             .sin_addr.s_addr=htonl(INADDR_ANY)
     };
     struct sockaddr_in tcpAddr = {

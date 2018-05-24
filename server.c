@@ -6,7 +6,7 @@ int getClientsAddr(slaveClients* sl, int n){
     int status=-1;
     struct sockaddr_in udpAddr={
             .sin_family=AF_INET,
-            .sin_port=htons(40110),
+            .sin_port=htons(UDPPORT),
             .sin_addr.s_addr= htonl(INADDR_BROADCAST)
     };
     struct sockaddr_in tcpAddr = {
@@ -29,7 +29,7 @@ int getClientsAddr(slaveClients* sl, int n){
     sendto(udpFd, &rbuf, sizeof(rbuf), 0, (struct sockaddr *) &udpAddr, sizeof(udpAddr)); //заявляем о себе в бродкаст
     for (int i=0; i < n; i++) {
         sl[i].addr.sin_family=AF_INET,
-        sl[i].addr.sin_port=htons(40110),
+        sl[i].addr.sin_port=htons(UDPPORT),
         sl[i].addr.sin_addr.s_addr= htonl(INADDR_ANY);
         sl[i].tcpAddr.sin_family=AF_INET;
         sl[i].tcpAddr.sin_port=0;
