@@ -11,7 +11,7 @@ int getClientsAddr(slaveClients* sl, int n){
     };
     struct sockaddr_in tcpAddr = {
             .sin_family=AF_INET,
-            .sin_port=0,
+            .sin_port=UDPPORT+1,
             .sin_addr.s_addr=htonl(INADDR_ANY)
     };
 
@@ -32,19 +32,20 @@ int getClientsAddr(slaveClients* sl, int n){
         sl[i].addr.sin_port=htons(UDPPORT),
         sl[i].addr.sin_addr.s_addr= htonl(INADDR_ANY);
         sl[i].tcpAddr.sin_family=AF_INET;
-        sl[i].tcpAddr.sin_port=0;
+        sl[i].tcpAddr.sin_port=29228;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
         clientAddrLen=sizeof(sl[i].addr);
-        for(int u=0; u<5; u++){
+        for(int u=0; u<500; u++){
             if((status=recvfrom(udpFd, &a, sizeof(a), MSG_DONTWAIT, (struct sockaddr*) &sl[i].addr, &clientAddrLen))>=0) break; //ждем сообщения4
-            usleep(100);
+            usleep(1000);
         }
         if(status<0) return-2;
-        sl[i].tcpAddr=sl[i].addr;
-        sl[i].tcpAddr.sin_port=a.tcpAddr.sin_port;
+        sl[i].tcpAddr=a.tcpAddr;
+        sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
+        //sl[i].tcpAddr.sin_port=a.tcpAddr.sin_port;
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr);
         sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-        //sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
+        //sl[i].tcpAddr.sin_port=29228;
         /*if(bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr))){
             printf("bind error try another port");
             return -3;

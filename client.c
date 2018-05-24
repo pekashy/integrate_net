@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     };
     struct sockaddr_in tcpAddr = {
             .sin_family=AF_INET,
-            .sin_port=0,
+            .sin_port=UDPPORT+1,
             .sin_addr.s_addr=htonl(INADDR_ANY)
     };
     int rbuf = getpid();
@@ -184,7 +184,6 @@ int main(int argc, char** argv) {
     if(recvfrom(udpFd, &b, sizeof(b), MSG_WAITALL,  &recvAddr, &recvAddrLen)<0) return -2;
    // setsockopt(udpFd.fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-    tcpAddr.sin_addr=recvAddr.sin_addr;
     //tcpAddr.sin_port=recvAddr.sin_port;
     if(bind(tcpFd, &tcpAddr, sizeof(tcpAddr))){
         printf("bind error %d", errno);
@@ -192,8 +191,10 @@ int main(int argc, char** argv) {
     }
     unsigned int tcpAddrLen = sizeof(tcpAddr);
     getsockname(tcpFd, &tcpAddr, &tcpAddrLen);
-    a.tcpAddr.sin_addr=tcpAddr.sin_addr;
-    a.tcpAddr.sin_port=tcpAddr.sin_port;
+    a.tcpAddr=tcpAddr;
+    //a.tcpAddr.sin_port=tcpAddr.sin_port;
+    //tcpAddr.sin_addr=recvAddr.sin_addr;
+
     if(sendto(udpFd, &a, sizeof(msg), MSG_DONTWAIT, (struct sockaddr*) &recvAddr, sizeof(recvAddr))<0){
         printf("msgsnd error\n");
         return -3;
