@@ -32,7 +32,7 @@ int getClientsAddr(slaveClients* sl, int n){
         sl[i].addr.sin_port=htons(UDPPORT),
         sl[i].addr.sin_addr.s_addr= htonl(INADDR_ANY);
         sl[i].tcpAddr.sin_family=AF_INET;
-        sl[i].tcpAddr.sin_port=29228;
+        sl[i].tcpAddr.sin_port=0;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
         clientAddrLen=sizeof(sl[i].addr);
         for(int u=0; u<500; u++){
@@ -40,7 +40,7 @@ int getClientsAddr(slaveClients* sl, int n){
             usleep(1000);
         }
         if(status<0) return-2;
-        sl[i].tcpAddr=a.tcpAddr;
+        sl[i].tcpAddr.sin_port=a.tcpAddr.sin_port;
         sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
         //sl[i].tcpAddr.sin_port=a.tcpAddr.sin_port;
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr);
@@ -48,8 +48,8 @@ int getClientsAddr(slaveClients* sl, int n){
         //sl[i].tcpAddr.sin_port=29228;
         /*if(bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr))){
             printf("bind error try another port");
-            return -3;
-        }
+           // return -3;
+        }/*
         tcpAddrLen=sizeof(sl[i].addr);*/
         //getsockname(sl[i].tcpFd, &sl[i].addr, &tcpAddrLen);
         //a.tcpAddr=sl[i].tcpAddr;

@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     };
     struct sockaddr_in tcpAddr = {
             .sin_family=AF_INET,
-            .sin_port=UDPPORT+1,
+            .sin_port=0,
             .sin_addr.s_addr=htonl(INADDR_ANY)
     };
     int rbuf = getpid();
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
    // setsockopt(udpFd.fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
     //tcpAddr.sin_port=recvAddr.sin_port;
-    if(bind(tcpFd, &tcpAddr, sizeof(tcpAddr))){
+    if(bind(tcpFd, (struct sockaddr*) &tcpAddr, sizeof(tcpAddr))){
         printf("bind error %d", errno);
         //return -3;
     }
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
     setsockopt(tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
     //a.tcpAddr.sin_addr=recvAddr.sin_addr;
     //bind(tcpFd, &recvAddr, sizeof(recvAddr));
-    tv.tv_sec = 1;
+    tv.tv_sec = 5;
     tv.tv_usec = 0;
     setsockopt(tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
