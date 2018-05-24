@@ -29,6 +29,7 @@ int getClientsAddr(slaveServers* sl, int n){
         sl[i].tcpAddr.sin_port=0;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
         serverAddrLen=sizeof(sl[i].addr);
+
         if(recvfrom(udpFd, &rbuf, sizeof(rbuf), MSG_WAITALL, (struct sockaddr*) &sl[i].addr, &serverAddrLen)<0) return -2; //ждем любого сообщения
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr.s_addr);
         sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
@@ -89,7 +90,7 @@ int main(int argc, char* argv) {
         bo[i].a = a + (b - a) / n * i;
         bo[i].b = a + (b - a) / n * (i + 1);
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
-        tv.tv_sec = 120;
+        tv.tv_sec = 60;
         tv.tv_usec = 0;
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
         //write(sl[i].fd, &bo[i], sizeof(bo[i]));
