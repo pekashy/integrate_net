@@ -30,13 +30,13 @@ typedef struct core{
     int load;
 } core;
 
-typedef struct slaveServers {
+typedef struct slaveClients {
     struct sockaddr_in addr;
     struct sockaddr_in tcpAddr;
     int fd;
     int tcpFd;
     int sk;
-} slaveServers;
+} slaveClients;
 
 typedef struct msg{
     struct sockaddr_in tcpAddr;

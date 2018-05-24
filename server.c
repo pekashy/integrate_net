@@ -3,6 +3,7 @@
 int getClientsAddr(slaveClients* sl, int n){
     int udpFd=socket(PF_INET, SOCK_DGRAM, 0);
     msg a;
+    int status=-1;
     struct sockaddr_in udpAddr={
             .sin_family=AF_INET,
             .sin_port=htons(40110),
@@ -34,14 +35,21 @@ int getClientsAddr(slaveClients* sl, int n){
         sl[i].tcpAddr.sin_port=0;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
         clientAddrLen=sizeof(sl[i].addr);
-        if(recvfrom(udpFd, &a, sizeof(a), MSG_WAITALL, (struct sockaddr*) &sl[i].addr, &clientAddrLen)<0) return -2; //ждем сообщения
+        for(int u=0; u<5; u++){
+            if((status=recvfrom(udpFd, &a, sizeof(a), MSG_DONTWAIT, (struct sockaddr*) &sl[i].addr, &clientAddrLen))>=0) break; //ждем сообщения4
+            usleep(100);
+        }
+        if(status<0) return-2;
         sl[i].tcpAddr=sl[i].addr;
         sl[i].tcpAddr.sin_port=a.tcpAddr.sin_port;
         printf("rcv %d %lu\n",i, sl[i].addr.sin_addr);
         sl[i].tcpFd = socket(PF_INET, SOCK_STREAM, 0);
         //sl[i].tcpAddr.sin_addr=sl[i].addr.sin_addr;
-        bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr));
-        tcpAddrLen=sizeof(sl[i].addr);
+        /*if(bind(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr))){
+            printf("bind error try another port");
+            return -3;
+        }
+        tcpAddrLen=sizeof(sl[i].addr);*/
         //getsockname(sl[i].tcpFd, &sl[i].addr, &tcpAddrLen);
         //a.tcpAddr=sl[i].tcpAddr;
         /*if(sendto(udpFd, &a, sizeof(msg), 0, (struct sockaddr*) &sl[i].addr, sizeof(sl[i].addr))<0){
@@ -87,7 +95,6 @@ int main(int argc, char* argv) {
     slaveClients* sl=calloc(n, sizeof(slaveClients));
     if(getClientsAddr(sl, n)!=1) return -1;
     int o;
-    int status=-1;
     double result=0, back;
     struct timeval tv;
     for(int i=0; i<n; i++){
@@ -101,11 +108,11 @@ int main(int argc, char* argv) {
         setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
         //write(sl[i].fd, &bo[i], sizeof(bo[i]));
         sl[i].sk=-1;
-
-    }
-    for(int i=0; i<n; i++) {
-        tv.tv_sec=1;
-        tv.tv_usec=0;
+        tv.tv_sec = 30;
+        tv.tv_usec = 0;
+        setsockopt(sl[i].tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+        tv.tv_sec=0;
+        tv.tv_usec=1000;
         for (int k=0; (o=connect(sl[i].tcpFd, (struct sockaddr*) &sl[i].tcpAddr, sizeof(sl[i].tcpAddr))==-1 && k<1000); k++){
             //  tv.tv_sec = 1;
             //  tv.tv_usec = 0;
@@ -115,9 +122,11 @@ int main(int argc, char* argv) {
             printf ("error: server is dead\n");
             return -1;
         }
-        printf("%f %f %d\n", bo[i].a, bo[i].b, o);
-        status = read(sl[i].tcpFd, &back, sizeof(back));
-        if (status<=0) {
+    }
+    for(int i=0; i<n; i++) {
+        //printf("%f %f %d\n", bo[i].a, bo[i].b, o);
+        o = read(sl[i].tcpFd, &back, sizeof(back));
+        if (o<=0) {
             printf ("result read error\n");
             return -1;
         }

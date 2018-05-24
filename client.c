@@ -165,7 +165,10 @@ int main(int argc, char** argv) {
     int udpFd;
     udpFd= socket(PF_INET, SOCK_DGRAM, 0);
     setsockopt(udpFd, SOL_SOCKET, SO_REUSEADDR, &ovl, sizeof(ovl));
-    bind(udpFd, &recvAddr, sizeof(recvAddr));
+    if(bind(udpFd, &recvAddr, sizeof(recvAddr))){
+        printf("bind error try another port");
+        return -3;
+    }
     //setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
     printf("pid %d", rbuf);
     //double buf = 0;
@@ -175,14 +178,18 @@ int main(int argc, char** argv) {
     //struct sockaddr_in recvAddr;//сюда пишем адрес
     unsigned int recvAddrLen = sizeof(recvAddr);
     //unsigned int udpAddrLen = sizeof(udpAddr);
-    //struct timeval tv;
+    struct timeval tv;
     double b=-1;
+
     if(recvfrom(udpFd, &b, sizeof(b), MSG_WAITALL,  &recvAddr, &recvAddrLen)<0) return -2;
    // setsockopt(udpFd.fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
     tcpAddr.sin_addr=recvAddr.sin_addr;
     //tcpAddr.sin_port=recvAddr.sin_port;
-    bind(tcpFd, &tcpAddr, sizeof(tcpAddr));
+    if(bind(tcpFd, &tcpAddr, sizeof(tcpAddr))){
+        printf("bind error try another port");
+        return -3;
+    }
     unsigned int tcpAddrLen = sizeof(tcpAddr);
     getsockname(tcpFd, &tcpAddr, &tcpAddrLen);
     a.tcpAddr.sin_addr=tcpAddr.sin_addr;
@@ -203,6 +210,9 @@ int main(int argc, char** argv) {
     setsockopt(tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
     //a.tcpAddr.sin_addr=recvAddr.sin_addr;
     //bind(tcpFd, &recvAddr, sizeof(recvAddr));
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
     listen(tcpFd, 256);
     if((sk=accept(tcpFd, NULL, NULL))<0) return 0;
