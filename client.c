@@ -21,18 +21,12 @@ void* threadFunc(void* b){
 }
 
 double integrate(borders boo, int n) {
-    cpu_set_t mask;
-    int mCpu, mCore;
     int procNum = get_nprocs();
-
     int coreIdMax = -1;
-    char c[33];
-
     const char cheatcode[] = "fgrep -e 'processor' -e 'core id' /proc/cpuinfo";
     FILE *cpuinfo_file = popen(cheatcode, "r");
     FILE *crs = popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}' | sort -rn | head -n 1",
                       "r"); //getting maximum cpuId    //sched_setscheduler(pthread_self(), SCHED_FIFO, NULL);
-
     if (!cpuinfo_file || !crs) {
         perror("error opening cpuinfo file");
         exit(-1);
@@ -42,57 +36,61 @@ double integrate(borders boo, int n) {
         printf("core num parsing error");
         exit(-1);
     }
-
-    core *cpu = malloc(sizeof(core) * (coreIdMax + 1));
+    core *cpu = calloc(coreIdMax + 1, sizeof(core));
     for (int y = 0; y < coreIdMax + 1; y++) {
         cpu[y].id = -1;
         CPU_ZERO(&cpu[y].mask);
         cpu[y].load = 0;
     }
-
-    CPU_ZERO (&mask);
-    CPU_SET ((mCpu = sched_getcpu()), &mask);
-    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &mask);
-
-    sprintf(c, "head -%d /proc/cpuinfo | tail -1\0", (mCpu * 27 + 12));
-    FILE *cc = popen(c, "r");
-    fscanf(cc, "core id         : %d", &mCore);
-    printf("bounding %d %d\n", mCpu, mCore);
-
-    cpu[mCore].load = 1;
-    CPU_SET(mCpu, &cpu[mCore].mask);
+    if(n>procNum) n=procNum;
+    if (!n || n < 1) return -1;
     double a = boo.a;
     double b = boo.b;
     double result = 0;
-
-    pthread_t threads[procNum + 1];
+    pthread_t thre[procNum + 1];
+    pthread_t threads[n + 1];
     int processor, coreId;
     int res = -1;
-    borders *bo = malloc(sizeof(borders) * n);
-    int loadCpu = 1; //per cpu
-    int loadCore;
-    if(n<procNum) loadCore=1;
-    else loadCore=2;
+    borders *bo = calloc(n, sizeof(borders));
+    borders *bb = calloc(abs(n - procNum) + 1, sizeof(borders));
+    printf("%d", abs((n - procNum)));
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    int i = 0;
-    bo[0].a = a;
-    bo[0].b = a + (b - a) / n;
-
+    int coreNum = 0;
     while ((res = fscanf(cpuinfo_file, "processor : %d\ncore id : %d\n", &processor, &coreId)) == 2) {
+        if (cpu[coreId].id == -1) coreNum++;
         cpu[coreId].id = processor;
         CPU_SET(processor, &cpu[coreId].mask);
     }
-
     if (res != EOF) {
         perror("fscanf #1");
         exit(-1);
     }
+    int minLoadCore = procNum / coreNum;
+    int k = n % coreNum;
+    int r = k;
+    int i=0, t = 0;
+    for (int w = 0; w <= coreIdMax; w++) {
+        if (cpu[w].id == -1) continue;
+        cpu[w].loadCore = n / coreNum + 1 * (r > 0);
+        cpu[w].trashLoadCore = (minLoadCore - cpu[w].loadCore) * ((minLoadCore - cpu[w].loadCore) > 0);
+        r--;
+        for (int tr = 0; tr < cpu[w].trashLoadCore+cpu[w].trashLoadCore*(cpu[w].loadCore==0 && w!=coreIdMax); tr++) {
+            pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpu[w].mask);
+            bb[t].a = a;
+            bb[t].b = b*100.0;
 
+            if ((pthread_create(&thre[t], &attr, threadFunc, &bb[t])) != 0) {
+                printf("err creating thread %d", errno);
+                return 0;
+            }
+            t++;
+        }
 
+    }
     for(int w=0; w<=coreIdMax; w++) {
         if (cpu[w].id == -1) continue;
-        while (cpu[w].load < loadCore && i<n-1) {
+        while (cpu[w].load < cpu[w].loadCore) {
             bo[i].a = a + (b - a) / n * i;
             bo[i].b = a + (b - a) / n * (i + 1);
             pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpu[w].mask);
@@ -100,23 +98,18 @@ double integrate(borders boo, int n) {
                 printf("err creating thread %d", errno);
                 return 0;
             }
-            printf("starting %dth process #%lu on core %d| current load %d loadCore %d\n",
-                   i, threads[i], w, cpu[w].load, loadCore);
-            cpu[w].load++;
             i++;
+            cpu[w].load++;
         }
     }
-    errno = 0;
-    bo[i].a = a + (b - a) / n * i;
-    bo[i].b = a + (b - a) / n * (i+1);
-    result=result+*((double*) threadFunc(&bo[n-1]));
     double* ret[n+1];
-    for(int i=n-2; i>=0 && n>1; i--){
+    result=0;
+    for(int i=n-1; i>=0; i--){
         if(!threads[i]) continue;
         pthread_join(threads[i], (void**) &ret[i]);
         result+=*ret[i];
         free(ret[i]);
-    }  /*Wait until thread is finished */
+    }
     printf("%e\n", result);
     return result;
 }
@@ -148,7 +141,6 @@ int input(int argc, char** argv){
 
 int main(int argc, char** argv) {
     printf("Hello, World!\n");
-    //int udpFd
     int n=input(argc, argv);
     struct sockaddr_in recvAddr = {
             .sin_family=AF_INET,
@@ -169,22 +161,13 @@ int main(int argc, char** argv) {
         printf("bind error try another port");
         return -3;
     }
-    //setsockopt(udpFd, SOL_SOCKET, SO_BROADCAST, &ovl, sizeof(ovl));
     printf("pid %d", rbuf);
-    //double buf = 0;
     msg a; //recieving adress
-    int status = -1;
-    //printf("send %lu\n", htonl(udpAddr.sin_addr.s_addr));
-    //struct sockaddr_in recvAddr;//сюда пишем адрес
     unsigned int recvAddrLen = sizeof(recvAddr);
-    //unsigned int udpAddrLen = sizeof(udpAddr);
     struct timeval tv;
-    double b=-1;
-
+    int b=-1;
     if(recvfrom(udpFd, &b, sizeof(b), MSG_WAITALL,  &recvAddr, &recvAddrLen)<0) return -2;
-   // setsockopt(udpFd.fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     int tcpFd = socket(PF_INET, SOCK_STREAM, 0);
-    //tcpAddr.sin_port=recvAddr.sin_port;
     if(bind(tcpFd, (struct sockaddr*) &tcpAddr, sizeof(tcpAddr))){
         printf("bind error %d", errno);
         //return -3;
@@ -192,36 +175,23 @@ int main(int argc, char** argv) {
     unsigned int tcpAddrLen = sizeof(tcpAddr);
     getsockname(tcpFd, &tcpAddr, &tcpAddrLen);
     a.tcpAddr=tcpAddr;
-    //a.tcpAddr.sin_port=tcpAddr.sin_port;
-    //tcpAddr.sin_addr=recvAddr.sin_addr;
+    a.threadNum=n;
 
     if(sendto(udpFd, &a, sizeof(msg), MSG_DONTWAIT, (struct sockaddr*) &recvAddr, sizeof(recvAddr))<0){
         printf("msgsnd error\n");
         return -3;
     }
-    printf("send %lu\n", htonl(recvAddr.sin_addr.s_addr));
-    /*if(status<0){
-        printf("error connecting to client\n");
-        return 0;
-    }*/
     printf("send-rcv handshake\n");
     printf("waiting for accept \n");
     int sk=-1;
     int o=1;
     setsockopt(tcpFd, SOL_SOCKET, SO_KEEPALIVE, &o, sizeof(o));
-    //a.tcpAddr.sin_addr=recvAddr.sin_addr;
-    //bind(tcpFd, &recvAddr, sizeof(recvAddr));
     tv.tv_sec = 5;
     tv.tv_usec = 0;
     setsockopt(tcpFd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
     listen(tcpFd, 256);
     if((sk=accept(tcpFd, NULL, NULL))<0) return 0;
-
-    /*for (int k=0; (o=connect(tcpFd, (struct sockaddr*) &a.tcpAddr, sizeof(a.tcpAddr))==-1 && k<1000); k++){
-      //  tv.tv_sec = 1;
-      //  tv.tv_usec = 0;
-    }*/
     printf("%d\n", sk);
     printf("tcp handshake %d\n", sk);
     borders bo;

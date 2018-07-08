@@ -27,6 +27,8 @@ typedef struct borders{
 typedef struct core{
     int id;
     int n;
+    int loadCore;
+    int trashLoadCore;
     cpu_set_t mask;
     int load;
 } core;
@@ -35,10 +37,12 @@ typedef struct slaveClients {
     struct sockaddr_in addr;
     struct sockaddr_in tcpAddr;
     int fd;
+    int threadNum;
     int tcpFd;
     int sk;
 } slaveClients;
 
 typedef struct msg{
     struct sockaddr_in tcpAddr;
+    int threadNum;
 } msg;
