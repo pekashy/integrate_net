@@ -24,9 +24,9 @@ int getClientsAddr(slaveClients* sl, int* n){
         sl[i].tcpAddr.sin_port=0;
         sl[i].tcpAddr.sin_addr.s_addr= htonl(INADDR_ANY);
         clientAddrLen=sizeof(sl[i].addr);
-        for(int u=0; u<50000; u++){
+        for(int u=0; u<5000; u++){
             if((status=recvfrom(udpFd, &a, sizeof(a), MSG_DONTWAIT, (struct sockaddr*) &sl[i].addr, &clientAddrLen))>=0) break; //ждем сообщения4
-            usleep(1000);
+            usleep(100);
         }
         if(status<0) return-2;
         summThreadsFromChld+=a.threadNum;
@@ -81,6 +81,7 @@ int main(int argc, char** argv) {
     double a=0;
     double b=10000;
     int* n=input(argc, argv);
+    if(!n[0] || !n[1]) return -1;
     borders bo[n[1]];
     printf("%d %d\n", n[0], n[1]);
     printf("Hello, World!\n");
