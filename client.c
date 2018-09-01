@@ -1,5 +1,6 @@
 #include "headers.h"
 #include <sys/poll.h>
+#include <assert.h>
 
 
 void* threadFunc(void* b){
@@ -22,15 +23,13 @@ void* threadFunc(void* b){
 
 double integrate(borders boo, int n) {
     int procNum = get_nprocs();
+    int coreNum = 0;
     int coreIdMax = -1;
     const char cheatcode[] = "fgrep -e 'processor' -e 'core id' /proc/cpuinfo";
     FILE *cpuinfo_file = popen(cheatcode, "r");
     FILE *crs = popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}' | sort -rn | head -n 1",
                       "r"); //getting maximum cpuId    //sched_setscheduler(pthread_self(), SCHED_FIFO, NULL);
-    if (!cpuinfo_file || !crs) {
-        perror("error opening cpuinfo file");
-        exit(-1);
-    }
+    assert(cpuinfo_file);
     fscanf(crs, "%d", &coreIdMax);
     if (coreIdMax < 0) {
         printf("core num parsing error");
@@ -42,6 +41,19 @@ double integrate(borders boo, int n) {
         CPU_ZERO(&cpu[y].mask);
         cpu[y].load = 0;
     }
+    FILE* prcslst=popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}'","r");
+    FILE* crslst=popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}'","r");
+    char prcid[4];
+    char crid[4];
+    int processor, coreId;
+    while(fgets(prcid, 4, (FILE*) prcslst) && fgets(crid, 4, (FILE*) crslst)){
+        printf("%d %d\n", atoi(crid), atoi(prcid));
+        int processor=atoi(prcid), coreId=atoi(crid);
+        if (cpu[coreId].id == -1) coreNum++;
+        cpu[coreId].id = processor;
+        CPU_SET(processor, &cpu[coreId].mask);
+    }
+
     if(n>procNum) n=procNum;
     if (!n || n < 1) return -1;
     double a = boo.a;
@@ -49,23 +61,11 @@ double integrate(borders boo, int n) {
     double result = 0;
     pthread_t thre[procNum + 1];
     pthread_t threads[n + 1];
-    int processor, coreId;
-    int res = -1;
     borders *bo = calloc(n, sizeof(borders));
     borders *bb = calloc(abs(n - procNum) + 1, sizeof(borders));
     printf("%d", abs((n - procNum)));
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    int coreNum = 0;
-    while ((res = fscanf(cpuinfo_file, "processor : %d\ncore id : %d\n", &processor, &coreId)) == 2) {
-        if (cpu[coreId].id == -1) coreNum++;
-        cpu[coreId].id = processor;
-        CPU_SET(processor, &cpu[coreId].mask);
-    }
-    if (res != EOF) {
-        perror("fscanf #1");
-        exit(-1);
-    }
     int minLoadCore = procNum / coreNum;
     int k = n % coreNum;
     int r = k;
