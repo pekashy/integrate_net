@@ -41,7 +41,7 @@ double integrate(borders boo, int n) {
         CPU_ZERO(&cpu[y].mask);
         cpu[y].load = 0;
     }
-    FILE* prcslst=popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}'","r");
+    FILE* prcslst=popen("grep 'processor' /proc/cpuinfo | grep -Eo '[0-9]{1,4}'","r");
     FILE* crslst=popen("grep 'core id' /proc/cpuinfo | grep -Eo '[0-9]{1,4}'","r");
     char prcid[4];
     char crid[4];
