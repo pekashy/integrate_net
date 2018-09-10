@@ -1,6 +1,6 @@
 CC:= gcc
-CFLAGS = -g -pg -std=c99 -fprofile-arcs -ftest-coverage -Wall# -g for debug, -O2 for optimise and -Wall additional messages
-LFLAGS = -pthread -lm --coverage
+CFLAGS = -g -pg -std=c99 -Wall# -g for debug, -O2 for optimise and -Wall additional messages
+LFLAGS = -pthread -lm
 SOURCES =client.c server.c
 OBJECTS1 =client.o
 OBJECTS2 =server.o

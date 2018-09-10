@@ -3,4 +3,10 @@ project(integrate_net C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(integrate_net main.c client.c server.c)
+set(SOURCE_FILES
+        client.c
+        server.c
+        headers.h
+        )
+
+add_executable(integrate_net client.c server.c headers.h)
